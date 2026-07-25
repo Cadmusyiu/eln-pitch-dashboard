@@ -16,7 +16,7 @@
 import { Illustration, PayoffPoint, PricingInput, ScenarioRow } from "./types";
 
 export const SCENARIO_MOVES = [-0.3, -0.2, -0.1, 0.0, 0.1, 0.2];
-export const PAYOFF_LO = 0.5;
+export const PAYOFF_LO = 0.0;
 export const PAYOFF_HI = 1.3;
 export const PAYOFF_STEP = 0.025;
 

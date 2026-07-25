@@ -75,6 +75,7 @@ const en: Dict = {
   ref_spot: "spot",
   ref_strike: "strike",
   ref_breakeven: "breakeven",
+  ref_call: "call",
 
   // scenario table
   scenario_title: "Scenario Analysis at Expiry",
@@ -210,6 +211,7 @@ const zh: Dict = {
   ref_spot: "現價",
   ref_strike: "行使價",
   ref_breakeven: "打和價",
+  ref_call: "贖回",
 
   scenario_title: "到期情境分析",
   th_move: "S_T 變動",
