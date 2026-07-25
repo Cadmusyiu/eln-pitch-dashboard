@@ -1,7 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { LIVE_DATA_ENABLED, fetchMarketData } from "../lib/api";
+import { useEffect, useState } from "react";
+import {
+  LIVE_DATA_ENABLED,
+  fetchLiveSpotFmp,
+  fetchMarketData,
+  fmpAvailable,
+  envFmpKeyPresent,
+  readLsFmpKey,
+  writeLsFmpKey,
+} from "../lib/api";
 import { findPreset, PRESETS } from "../lib/presets";
 import { Currency, PricingInput, Settlement } from "../lib/types";
 import { useLang } from "../lib/i18n";
@@ -94,26 +102,60 @@ export default function InputForm({ value, onChange }: Props) {
   const [fetching, setFetching] = useState(false);
   const [status, setStatus] = useState<"idle" | "ok" | "failed">("idle");
 
+  // Live-data availability. FMP key may live in localStorage (per-browser) or be
+  // baked in via NEXT_PUBLIC_FMP_KEY; we mirror it into state so the UI reacts when
+  // the user saves/clears their key. fmpOn = a usable key exists (LS or env).
+  // NOTE: this is a "use client" component but Next still SSRs the initial HTML, so
+  // we initialise to empty/false and populate from localStorage in a mount effect —
+  // otherwise reading window/localStorage during render causes a hydration mismatch.
+  const [fmpOn, setFmpOn] = useState(false);
+  const [envFmp] = useState(envFmpKeyPresent()); // build-time constant: same on server & client
+  const [keyDraft, setKeyDraft] = useState("");
+  const [showKey, setShowKey] = useState(false);
+  const [keyOpen, setKeyOpen] = useState(false);
+  const [keyMsg, setKeyMsg] = useState<string>("");
+
+  useEffect(() => {
+    setFmpOn(fmpAvailable());
+    setKeyDraft(readLsFmpKey());
+  }, []);
+
+  // The live button shows whenever the FMP path OR the backend path is usable.
+  const liveOn = fmpOn || LIVE_DATA_ENABLED;
+
   // Derived each render — the ticker is the single source of truth, so no state needed.
   // `presetApplied` is true only when the fields actually hold the preset's values, so the
   // indicative badge never falsely claims a preset is loaded (e.g. on the canonical default).
   const presetMatch = findPreset(value.ticker);
   const presetApplied = !!presetMatch && Math.abs(value.spot - presetMatch.spot) < 1e-9;
 
+  // Fetch live spot. Prefers the client-side FMP path (works on the static deploy);
+  // falls back to the backend yfinance path when USE_API is on and no FMP key is set.
   const onFetch = async () => {
-    if (!LIVE_DATA_ENABLED || !value.ticker.trim()) return;
+    if (!liveOn || !value.ticker.trim()) return;
     setFetching(true);
     setStatus("idle");
     try {
-      const md = await fetchMarketData(value.ticker, value.tenor_months, value.strike_pct);
-      if (!md) {
+      let spot: number | null = null;
+      let currency: Currency | null = null;
+      if (fmpOn) {
+        const live = await fetchLiveSpotFmp(value.ticker);
+        if (live) {
+          spot = live.spot;
+          currency = live.currency;
+        }
+      } else if (LIVE_DATA_ENABLED) {
+        const md = await fetchMarketData(value.ticker, value.tenor_months, value.strike_pct);
+        if (md) {
+          spot = md.spot;
+          currency = md.currency;
+        }
+      }
+      if (spot == null || !currency) {
         setStatus("failed");
       } else {
-        const patch: Partial<PricingInput> = {};
-        if (md.spot) patch.spot = md.spot;
-        patch.currency = md.currency;
-        if (Object.keys(patch).length) onChange(patch);
-        setStatus(md.spot ? "ok" : "failed");
+        onChange({ spot, currency });
+        setStatus("ok");
       }
     } catch {
       setStatus("failed");
@@ -121,6 +163,22 @@ export default function InputForm({ value, onChange }: Props) {
       setFetching(false);
     }
   };
+
+  const saveKey = () => {
+    writeLsFmpKey(keyDraft);
+    const on = fmpAvailable();
+    setFmpOn(on);
+    setKeyMsg(on ? "fmp_key_saved" : "fmp_key_cleared");
+  };
+
+  const clearKey = () => {
+    writeLsFmpKey("");
+    setKeyDraft("");
+    setFmpOn(fmpAvailable()); // may still be on via env
+    setKeyMsg("fmp_key_cleared");
+  };
+
+  const panelLabel = fmpOn ? t("fmp_panel_set") : t("fmp_panel_open");
 
   return (
     <div className="rounded-xl bg-navy-900 p-5 shadow-lg">
@@ -149,7 +207,7 @@ export default function InputForm({ value, onChange }: Props) {
               }
             }}
           />
-          {LIVE_DATA_ENABLED && (
+          {liveOn && (
             <button
               type="button"
               disabled={fetching || !value.ticker.trim()}
@@ -173,13 +231,85 @@ export default function InputForm({ value, onChange }: Props) {
             {presetMatch?.name} · {t("indicative")}
           </span>
         ) : (
-          !LIVE_DATA_ENABLED && (
-            <span className="mt-1 block text-xs text-slate-500">{t("preset_hint")}</span>
-          )
+          !liveOn && <span className="mt-1 block text-xs text-slate-500">{t("fetch_no_key")}</span>
         )}
         {status === "ok" && <span className="mt-1 block text-xs text-positive">{t("fetch_ok")}</span>}
         {status === "failed" && <span className="mt-1 block text-xs text-negative">{t("fetch_failed")}</span>}
       </Field>
+
+      {/* Live-data API key (client-side FMP). Collapsible; only needed on the static
+          deploy without a baked-in env key. Per-browser, never committed. */}
+      <div className="mb-4 rounded-md border border-slate-700 bg-navy-800/50">
+        <button
+          type="button"
+          onClick={() => setKeyOpen((v) => !v)}
+          className="flex w-full items-center justify-between px-3 py-2 text-xs font-medium text-slate-200 hover:text-white"
+        >
+          <span className={fmpOn ? "text-positive" : ""}>
+            {fmpOn ? "● " : "○ "}
+            {panelLabel}
+          </span>
+          <span className="text-slate-400">{keyOpen ? "▾" : "▸"}</span>
+        </button>
+        {keyOpen && (
+          <div className="border-t border-slate-700 px-3 py-3">
+            <p className="mb-2 text-xs leading-relaxed text-slate-400">{t("fmp_panel_hint")}</p>
+            <div className="flex gap-2">
+              <input
+                type={showKey ? "text" : "password"}
+                className={baseInputCls}
+                placeholder={t("fmp_key_ph")}
+                value={keyDraft}
+                onChange={(e) => {
+                  setKeyDraft(e.target.value);
+                  setKeyMsg("");
+                }}
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <button
+                type="button"
+                onClick={saveKey}
+                className="shrink-0 rounded-md bg-sky-600 px-3 py-2 text-xs font-medium text-white hover:bg-sky-500"
+              >
+                {t("fmp_key_save")}
+              </button>
+              {(keyDraft || fmpOn) && (
+                <button
+                  type="button"
+                  onClick={clearKey}
+                  className="shrink-0 rounded-md bg-navy-700 px-3 py-2 text-xs font-medium text-slate-200 hover:bg-navy-800"
+                >
+                  {t("fmp_key_clear")}
+                </button>
+              )}
+            </div>
+            <div className="mt-2 flex items-center justify-between">
+              <label className="flex items-center gap-1.5 text-xs text-slate-400">
+                <input
+                  type="checkbox"
+                  checked={showKey}
+                  onChange={(e) => setShowKey(e.target.checked)}
+                  className="h-3 w-3"
+                />
+                {t("fmp_key_show")}
+              </label>
+              <a
+                href="https://site.financialmodelingprep.com/developer/docs"
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-sky-400 hover:text-sky-300"
+              >
+                {t("fmp_key_get")}
+              </a>
+            </div>
+            {keyMsg && <span className="mt-2 block text-xs text-positive">{t(keyMsg)}</span>}
+            {envFmp && !fmpOn && (
+              <span className="mt-2 block text-xs text-slate-500">{t("fmp_key_env_note")}</span>
+            )}
+          </div>
+        )}
+      </div>
 
       <Field label={t("spot")}>
         <NumberField value={value.spot} onValue={(n) => onChange({ spot: n })} />

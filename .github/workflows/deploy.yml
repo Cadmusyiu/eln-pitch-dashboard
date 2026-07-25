@@ -30,6 +30,10 @@ jobs:
       - run: npm run build
         env:
           GITHUB_PAGES: "true"
+          # Optional: bake a shared FMP quote key into the static bundle for zero-config
+          # live spot. If unset, the in-app "Live-data API key" panel (per-browser
+          # localStorage) is used instead — recommended, since it keeps keys private.
+          NEXT_PUBLIC_FMP_KEY: ${{ secrets.NEXT_PUBLIC_FMP_KEY }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: frontend/out
