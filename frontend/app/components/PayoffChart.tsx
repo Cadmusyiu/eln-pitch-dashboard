@@ -14,11 +14,25 @@ import { PayoffPoint, Summary } from "../lib/types";
 import { money } from "../lib/format";
 import { useLang } from "../lib/i18n";
 
-function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
+// The chart sits in a fixed 300px box; the legend must live OUTSIDE that box
+// (but still inside the card) or it overflows into whatever follows — e.g. the
+// one-pager disclaimer. So ChartCard takes `legend` as a separate slot.
+function ChartCard({
+  title,
+  legend,
+  children,
+}: {
+  title: string;
+  legend?: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <div className="rounded-xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
       <h3 className="mb-3 font-semibold text-slate-800">{title}</h3>
       <div style={{ width: "100%", height: 300 }}>{children}</div>
+      {legend ? (
+        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-xs">{legend}</div>
+      ) : null}
     </div>
   );
 }
@@ -35,15 +49,27 @@ export default function PayoffChart({ payoff, s }: { payoff: PayoffPoint[]; s: S
   // strike / breakeven / call / spot captions can never overlap. Each swatch
   // mirrors its line (color + dash) and shows the % of spot plus the absolute
   // price — more useful to a client than a crowded in-chart label.
-  const legend = [
+  const legendItems = [
     { key: "spot", label: t("ref_spot"), color: "#1b3a68", dash: "solid", pct: "100.0", price: money(s.spot, cur, 2) },
     { key: "strike", label: t("ref_strike"), color: "#f59e0b", dash: "dashed", pct: (s.strike_pct * 100).toFixed(1), price: money(s.strike, cur, 2) },
     { key: "breakeven", label: t("ref_breakeven"), color: "#d93025", dash: "dotted", pct: s.breakeven_pct_of_spot.toFixed(1), price: money(s.breakeven_st, cur, 2) },
     { key: "call", label: t("ref_call"), color: "#7c3aed", dash: "dashed", pct: s.call_level_pct.toFixed(1), price: money(s.call_level_st, cur, 2) },
   ];
 
+  const legend = legendItems.map((it) => (
+    <span key={it.key} className="inline-flex items-center gap-1.5">
+      <span
+        aria-hidden
+        style={{ display: "inline-block", width: 20, height: 0, borderTop: `2.5px ${it.dash} ${it.color}` }}
+      />
+      <span className="text-slate-500">{it.label}</span>
+      <span className="font-semibold tabular-nums text-slate-800">{it.pct}%</span>
+      <span className="text-slate-400">· {it.price}</span>
+    </span>
+  ));
+
   return (
-    <ChartCard title={t("chart_payoff_title")}>
+    <ChartCard title={t("chart_payoff_title")} legend={legend}>
       <ResponsiveContainer>
         <LineChart data={data} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -64,20 +90,6 @@ export default function PayoffChart({ payoff, s }: { payoff: PayoffPoint[]; s: S
           <Line type="monotone" dataKey="pnl" stroke="#0f9d58" strokeWidth={2.5} dot={false} name={t("legend_pnl")} />
         </LineChart>
       </ResponsiveContainer>
-
-      <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5 text-xs">
-        {legend.map((it) => (
-          <span key={it.key} className="inline-flex items-center gap-1.5">
-            <span
-              aria-hidden
-              style={{ display: "inline-block", width: 20, height: 0, borderTop: `2.5px ${it.dash} ${it.color}` }}
-            />
-            <span className="text-slate-500">{it.label}</span>
-            <span className="font-semibold tabular-nums text-slate-800">{it.pct}%</span>
-            <span className="text-slate-400">· {it.price}</span>
-          </span>
-        ))}
-      </div>
     </ChartCard>
   );
 }
