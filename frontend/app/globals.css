@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Thin scrollbars for the scenario table */
+.table-scroll::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.table-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+/* Print: only the term sheet shows when printing */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .termsheet,
+  .termsheet * {
+    visibility: visible;
+  }
+  .termsheet {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}
