@@ -147,7 +147,10 @@ const en: Dict = {
 
   // one-pager
   op_title: "ELN One-Pager",
-  op_print: "Print / Save PDF",
+  op_image: "Download PNG",
+  op_img_working: "Rendering…",
+  op_img_done: "Saved ✓",
+  op_img_failed: "Export failed",
   ts_disclaimer:
     "For illustrative purposes only. Not an offer, solicitation, or investment advice. Figures depend on the inputs shown. ELNs can result in loss of principal up to the max loss shown.",
 
@@ -304,7 +307,10 @@ const zh: Dict = {
 
   // 一頁式
   op_title: "ELN 一頁式摘要",
-  op_print: "列印 / 存 PDF",
+  op_image: "下載 PNG",
+  op_img_working: "產生中…",
+  op_img_done: "已下載 ✓",
+  op_img_failed: "匯出失敗",
   ts_disclaimer: "僅供演示，非要約、招攬或投資建議。數字取決於所示輸入。ELN 可能虧損本金至上限所示金額。",
 
   // coupon 輸入 + 自動贖回（call）
