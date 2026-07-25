@@ -121,32 +121,37 @@ function currencyFromFmp(ticker: string, exchange: string | undefined): Currency
   return looksHK(ticker) ? "HKD" : "USD";
 }
 
-export interface LiveSpot {
-  spot: number;
-  currency: Currency;
-}
+export type LiveSpotResult =
+  | { ok: true; spot: number; currency: Currency }
+  | { ok: false; reason: "nokey" | "premium" | "notfound" | "error" };
 
 // GET /stable/quote?symbol=SYM&apikey=KEY -> [{ symbol, name, price, exchange, ... }]
-// (no `currency` field — inferred in currencyFromFmp). Returns null on any error /
-// empty / non-numeric price so the caller shows a graceful "fetch failed". HKEX
-// symbols 402 on the free plan → null → "fetch failed (HK needs paid plan)".
-export async function fetchLiveSpotFmp(ticker: string): Promise<LiveSpot | null> {
+// (no `currency` field — inferred in currencyFromFmp). FMP's FREE plan covers only a
+// curated set of popular US large-caps; HKEX, ADRs, and some share classes return
+// HTTP 402 "premium". We return a discriminated result so the UI can tell the user
+// WHY a fetch failed (paid plan vs not-found vs network) — not just "failed".
+export async function fetchLiveSpotFmp(ticker: string): Promise<LiveSpotResult> {
+  const tk = ticker.trim();
   const key = resolveFmpKey();
-  if (!key || !ticker.trim()) return null;
-  const sym = normalizeForFmp(ticker);
+  if (!key || !tk) return { ok: false, reason: "nokey" };
+  // HKEX is always premium on the free plan — short-circuit to save a quota call
+  // and give instant feedback.
+  if (looksHK(tk)) return { ok: false, reason: "premium" };
+  const sym = normalizeForFmp(tk);
   try {
     const url = `${FMP_BASE}/quote?symbol=${encodeURIComponent(sym)}&apikey=${encodeURIComponent(key)}`;
     const r = await fetch(url);
-    if (!r.ok) return null;
+    if (r.status === 402) return { ok: false, reason: "premium" };
+    if (r.status === 404) return { ok: false, reason: "notfound" };
+    if (!r.ok) return { ok: false, reason: "error" };
     const data = await r.json();
-    // FMP reports bad keys / unknown symbols as `{ "Error Message": "..." }` or a
-    // plain "Premium Query Parameter: …" string (HTTP 402) — guard before indexing.
-    if (!Array.isArray(data) || data.length === 0) return null;
+    // FMP reports bad keys as `{ "Error Message": "..." }` — guard before indexing.
+    if (!Array.isArray(data) || data.length === 0) return { ok: false, reason: "notfound" };
     const row = data[0];
     const price = typeof row.price === "number" ? row.price : Number(row.price);
-    if (!isFinite(price) || price <= 0) return null;
-    return { spot: price, currency: currencyFromFmp(ticker, row.exchange) };
+    if (!isFinite(price) || price <= 0) return { ok: false, reason: "notfound" };
+    return { ok: true, spot: price, currency: currencyFromFmp(tk, row.exchange) };
   } catch {
-    return null;
+    return { ok: false, reason: "error" };
   }
 }

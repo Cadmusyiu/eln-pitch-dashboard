@@ -100,7 +100,7 @@ export function inferCurrency(ticker: string): Currency {
 export default function InputForm({ value, onChange }: Props) {
   const { t } = useLang();
   const [fetching, setFetching] = useState(false);
-  const [status, setStatus] = useState<"idle" | "ok" | "failed">("idle");
+  const [status, setStatus] = useState<"idle" | "ok" | "premium" | "notfound" | "failed">("idle");
 
   // Live-data availability. FMP key may live in localStorage (per-browser) or be
   // baked in via NEXT_PUBLIC_FMP_KEY; we mirror it into state so the UI reacts when
@@ -136,26 +136,25 @@ export default function InputForm({ value, onChange }: Props) {
     setFetching(true);
     setStatus("idle");
     try {
-      let spot: number | null = null;
-      let currency: Currency | null = null;
       if (fmpOn) {
-        const live = await fetchLiveSpotFmp(value.ticker);
-        if (live) {
-          spot = live.spot;
-          currency = live.currency;
+        const res = await fetchLiveSpotFmp(value.ticker);
+        if (res.ok) {
+          onChange({ spot: res.spot, currency: res.currency });
+          setStatus("ok");
+        } else {
+          setStatus(
+            res.reason === "premium" ? "premium" : res.reason === "notfound" ? "notfound" : "failed"
+          );
         }
-      } else if (LIVE_DATA_ENABLED) {
-        const md = await fetchMarketData(value.ticker, value.tenor_months, value.strike_pct);
-        if (md) {
-          spot = md.spot;
-          currency = md.currency;
-        }
+        return;
       }
-      if (spot == null || !currency) {
-        setStatus("failed");
-      } else {
-        onChange({ spot, currency });
+      // Backend yfinance path (USE_API mode) — null on any failure → generic "failed".
+      const md = await fetchMarketData(value.ticker, value.tenor_months, value.strike_pct);
+      if (md && md.spot) {
+        onChange({ spot: md.spot, currency: md.currency });
         setStatus("ok");
+      } else {
+        setStatus("failed");
       }
     } catch {
       setStatus("failed");
@@ -234,10 +233,14 @@ export default function InputForm({ value, onChange }: Props) {
           !liveOn && <span className="mt-1 block text-xs text-slate-500">{t("fetch_no_key")}</span>
         )}
         {status === "ok" && <span className="mt-1 block text-xs text-positive">{t("fetch_ok")}</span>}
+        {status === "premium" && (
+          <span className="mt-1 block text-xs text-negative">{t("fetch_premium")}</span>
+        )}
+        {status === "notfound" && (
+          <span className="mt-1 block text-xs text-negative">{t("fetch_notfound")}</span>
+        )}
         {status === "failed" && (
-          <span className="mt-1 block text-xs text-negative">
-            {looksHK(value.ticker) ? t("fetch_failed_hk") : t("fetch_failed")}
-          </span>
+          <span className="mt-1 block text-xs text-negative">{t("fetch_failed")}</span>
         )}
       </Field>
 
