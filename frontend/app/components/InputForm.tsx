@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { LIVE_DATA_ENABLED, fetchMarketData } from "../lib/api";
+import { findPreset, PRESETS } from "../lib/presets";
 import { Currency, PricingInput, Settlement } from "../lib/types";
 import { useLang } from "../lib/i18n";
 
@@ -82,6 +83,9 @@ export default function InputForm({ value, onChange }: Props) {
   const [status, setStatus] = useState<"idle" | "ok" | "failed">("idle");
   const [ivSource, setIvSource] = useState<"option_chain" | "manual" | "unavailable">("manual");
 
+  // Derived each render — the ticker is the single source of truth, so no state needed.
+  const presetMatch = findPreset(value.ticker);
+
   const onFetch = async () => {
     if (!LIVE_DATA_ENABLED || !value.ticker.trim()) return;
     setFetching(true);
@@ -118,23 +122,53 @@ export default function InputForm({ value, onChange }: Props) {
           <input
             type="text"
             className={inputCls}
+            list="ticker-presets"
             value={value.ticker}
-            onChange={(e) =>
-              onChange({ ticker: e.target.value.toUpperCase(), currency: inferCurrency(e.target.value) })
-            }
+            onChange={(e) => {
+              const tk = e.target.value.toUpperCase();
+              const p = findPreset(tk);
+              if (p) {
+                // Matched a curated underlying — fill indicative spot/dividend/IV/currency.
+                onChange({
+                  ticker: tk,
+                  currency: p.currency,
+                  spot: p.spot,
+                  dividend_yield: p.dividend_yield,
+                  iv: p.iv,
+                });
+              } else {
+                // Unknown ticker — keep fields as-is, just infer currency.
+                onChange({ ticker: tk, currency: inferCurrency(tk) });
+              }
+            }}
           />
-          <button
-            type="button"
-            disabled={!LIVE_DATA_ENABLED || fetching || !value.ticker.trim()}
-            onClick={onFetch}
-            title={LIVE_DATA_ENABLED ? "" : t("fetch_disabled")}
-            className="shrink-0 rounded-md bg-navy-700 px-3 py-2 text-xs font-medium text-slate-100 hover:bg-navy-800 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {fetching ? "…" : t("fetch_btn")}
-          </button>
+          {LIVE_DATA_ENABLED && (
+            <button
+              type="button"
+              disabled={fetching || !value.ticker.trim()}
+              onClick={onFetch}
+              className="shrink-0 rounded-md bg-navy-700 px-3 py-2 text-xs font-medium text-slate-100 hover:bg-navy-800 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {fetching ? "…" : t("fetch_btn")}
+            </button>
+          )}
         </div>
-        {!LIVE_DATA_ENABLED && (
-          <span className="mt-1 block text-xs text-slate-500">{t("fetch_disabled")}</span>
+        {/* Native autocomplete fed by the curated basket — works on the static deploy. */}
+        <datalist id="ticker-presets">
+          {PRESETS.map((p) => (
+            <option key={p.ticker} value={p.ticker}>
+              {p.name}
+            </option>
+          ))}
+        </datalist>
+        {presetMatch ? (
+          <span className="mt-1 block text-xs text-sky-300">
+            {presetMatch.name} · {t("indicative")}
+          </span>
+        ) : (
+          !LIVE_DATA_ENABLED && (
+            <span className="mt-1 block text-xs text-slate-500">{t("preset_hint")}</span>
+          )
         )}
         {status === "ok" && <span className="mt-1 block text-xs text-positive">{t("fetch_ok")}</span>}
         {status === "failed" && <span className="mt-1 block text-xs text-negative">{t("fetch_failed")}</span>}
