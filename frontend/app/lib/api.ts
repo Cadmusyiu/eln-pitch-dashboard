@@ -58,7 +58,10 @@ export const LIVE_DATA_ENABLED = USE_API;
 //   2. NEXT_PUBLIC_FMP_KEY           — optional build-time default (baked into the
 //                                       bundle, so publicly readable). Use only if
 //                                       you accept a shared, publicly visible key.
-const FMP_BASE = "https://financialmodelingprep.com/api/v3";
+// FMP migrated to /stable/* on 2025-08-31; the legacy /api/v3/* quote route now
+// 403s for keys created after that date. Free plan = US exchanges only — HKEX
+// symbols (0700.HK, 9988.HK, …) return HTTP 402 "premium", so HK stays manual.
+const FMP_BASE = "https://financialmodelingprep.com/stable";
 const ENV_FMP_KEY = process.env.NEXT_PUBLIC_FMP_KEY || "";
 const LS_KEY = "eln.fmp_key";
 
@@ -110,13 +113,12 @@ export function normalizeForFmp(ticker: string): string {
   return t;
 }
 
-// FMP returns the real currency (USD/HKD/EUR/...). We model only USD & HKD; treat
-// anything non-HK as USD for illustration purposes.
-function currencyFromFmp(cur: string | undefined, exchange: string | undefined): Currency {
-  const c = (cur || "").toUpperCase();
+// /stable/quote has no `currency` field, so infer from exchange (NASDAQ/NYSE → USD),
+// falling back to the ticker (.HK / pure digits → HKD).
+function currencyFromFmp(ticker: string, exchange: string | undefined): Currency {
   const ex = (exchange || "").toUpperCase();
-  if (c === "HKD" || ex.includes("HK") || ex.includes("HONG")) return "HKD";
-  return "USD";
+  if (ex.includes("HK") || ex.includes("HONG")) return "HKD";
+  return looksHK(ticker) ? "HKD" : "USD";
 }
 
 export interface LiveSpot {
@@ -124,25 +126,26 @@ export interface LiveSpot {
   currency: Currency;
 }
 
-// GET /v3/quote/{symbol}?apikey=KEY -> [{ symbol, price, currency, exchange, name, ... }]
-// Returns null on any error / empty / non-numeric price so the caller shows a
-// graceful "fetch failed" and keeps manual input.
+// GET /stable/quote?symbol=SYM&apikey=KEY -> [{ symbol, name, price, exchange, ... }]
+// (no `currency` field — inferred in currencyFromFmp). Returns null on any error /
+// empty / non-numeric price so the caller shows a graceful "fetch failed". HKEX
+// symbols 402 on the free plan → null → "fetch failed (HK needs paid plan)".
 export async function fetchLiveSpotFmp(ticker: string): Promise<LiveSpot | null> {
   const key = resolveFmpKey();
   if (!key || !ticker.trim()) return null;
   const sym = normalizeForFmp(ticker);
   try {
-    const url = `${FMP_BASE}/quote/${encodeURIComponent(sym)}?apikey=${encodeURIComponent(key)}`;
+    const url = `${FMP_BASE}/quote?symbol=${encodeURIComponent(sym)}&apikey=${encodeURIComponent(key)}`;
     const r = await fetch(url);
     if (!r.ok) return null;
     const data = await r.json();
-    // FMP reports bad keys / unknown symbols as `{ "Error Message": "..." }`
-    // (sometimes with HTTP 200) — guard before indexing.
+    // FMP reports bad keys / unknown symbols as `{ "Error Message": "..." }` or a
+    // plain "Premium Query Parameter: …" string (HTTP 402) — guard before indexing.
     if (!Array.isArray(data) || data.length === 0) return null;
     const row = data[0];
     const price = typeof row.price === "number" ? row.price : Number(row.price);
     if (!isFinite(price) || price <= 0) return null;
-    return { spot: price, currency: currencyFromFmp(row.currency, row.exchange) };
+    return { spot: price, currency: currencyFromFmp(ticker, row.exchange) };
   } catch {
     return null;
   }

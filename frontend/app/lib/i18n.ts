@@ -25,6 +25,7 @@ const en: Dict = {
   fetch_disabled: "Live data needs the backend running (NEXT_PUBLIC_USE_API).",
   fetch_ok: "Filled live spot + currency.",
   fetch_failed: "Live fetch unavailable — enter spot manually.",
+  fetch_failed_hk: "HK live quotes need a paid FMP plan — enter spot manually (preset is indicative).",
   fetch_no_key: "Add a free FMP API key below to fetch live spot for any ticker.",
   preset_hint: "Type or pick a preset ticker (↓) to auto-fill an indicative spot; confirm with the desk.",
   // FMP API-key management (client-side live data on the static deploy)
@@ -178,6 +179,7 @@ const zh: Dict = {
   fetch_disabled: "即時資料需啟動 backend（NEXT_PUBLIC_USE_API）。",
   fetch_ok: "已帶入即時 spot + 貨幣。",
   fetch_failed: "即時抓取失敗——請手動輸入 spot。",
+  fetch_failed_hk: "港股即時報價需 FMP 付費方案——請手動輸入 spot（預設為示意值）。",
   fetch_no_key: "在下方加入免費 FMP API 金鑰，即可抓取任何 ticker 的即時 spot。",
   preset_hint: "輸入或從預設清單（↓）選取代號，自動帶入示意 spot；pitch 前請向交易台確認。",
   // FMP API 金鑰管理（靜態部署上的 client-side 即時資料）

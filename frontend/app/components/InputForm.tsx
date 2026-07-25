@@ -234,7 +234,11 @@ export default function InputForm({ value, onChange }: Props) {
           !liveOn && <span className="mt-1 block text-xs text-slate-500">{t("fetch_no_key")}</span>
         )}
         {status === "ok" && <span className="mt-1 block text-xs text-positive">{t("fetch_ok")}</span>}
-        {status === "failed" && <span className="mt-1 block text-xs text-negative">{t("fetch_failed")}</span>}
+        {status === "failed" && (
+          <span className="mt-1 block text-xs text-negative">
+            {looksHK(value.ticker) ? t("fetch_failed_hk") : t("fetch_failed")}
+          </span>
+        )}
       </Field>
 
       {/* Live-data API key (client-side FMP). Collapsible; only needed on the static
