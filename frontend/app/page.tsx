@@ -8,6 +8,7 @@ import ScenarioTable from "./components/ScenarioTable";
 import CallFeatureCard from "./components/CallFeatureCard";
 import ComparisonView from "./components/ComparisonView";
 import TermSheet from "./components/TermSheet";
+import OnePager from "./components/OnePager";
 import { buildIllustration } from "./lib/engine";
 import { PricingInput } from "./lib/types";
 import { LangProvider, useLang, Lang } from "./lib/i18n";
@@ -54,7 +55,7 @@ function LangToggle() {
   );
 }
 
-type Tab = "single" | "compare" | "termsheet";
+type Tab = "single" | "compare" | "termsheet" | "onepager";
 
 function Dashboard() {
   const { t } = useLang();
@@ -76,7 +77,7 @@ function Dashboard() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex rounded-lg bg-navy-800 p-1">
-              {(["single", "compare", "termsheet"] as Tab[]).map((tb) => (
+              {(["single", "compare", "termsheet", "onepager"] as Tab[]).map((tb) => (
                 <button
                   key={tb}
                   onClick={() => setTab(tb)}
@@ -84,7 +85,13 @@ function Dashboard() {
                     tab === tb ? "bg-white text-navy-900" : "text-slate-300 hover:text-white"
                   }`}
                 >
-                  {tb === "single" ? t("tab_single") : tb === "compare" ? t("tab_compare") : t("tab_termsheet")}
+                  {tb === "single"
+                    ? t("tab_single")
+                    : tb === "compare"
+                    ? t("tab_compare")
+                    : tb === "termsheet"
+                    ? t("tab_termsheet")
+                    : t("tab_onepager")}
                 </button>
               ))}
             </div>
@@ -112,6 +119,7 @@ function Dashboard() {
             )}
             {tab === "compare" && <ComparisonView base={debounced} />}
             {tab === "termsheet" && <TermSheet ill={illustration} />}
+            {tab === "onepager" && <OnePager ill={illustration} />}
           </section>
         </div>
       </main>

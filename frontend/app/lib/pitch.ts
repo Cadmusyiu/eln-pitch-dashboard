@@ -28,7 +28,6 @@ const EN: Dict = {
   breakeven: "Breakeven",
   ofSpot: "of spot",
   maxLoss: "Max loss (spot at maturity → 0)",
-  scenarios: "Scenarios (spot at maturity)",
   disclaimer:
     "Illustrative only — not an offer or solicitation. ELNs involve risk of loss up to the max loss shown.",
 };
@@ -53,7 +52,6 @@ const ZH: Dict = {
   breakeven: "打和價",
   ofSpot: "佔現價",
   maxLoss: "最大虧損（到期股價 → 0）",
-  scenarios: "情境（到期股價）",
   disclaimer: "僅供演示，非要約或招攬。ELN 可能虧損本金至上限所示金額。",
 };
 
@@ -66,16 +64,6 @@ export function buildPitchText(ill: Illustration, lang: Lang): string {
   const cur = s.currency;
   const L = lang === "zh" ? ZH : EN;
   const W = 12; // label column width
-
-  const move = (m: number) => (m > 0 ? `+${m.toFixed(0)}%` : `${m.toFixed(0)}%`);
-  const ret = (r: number) => (r >= 0 ? `+${r.toFixed(2)}%` : `${r.toFixed(2)}%`);
-
-  // Pack the 6 scenarios into rows of 3 for a tidy block.
-  const cells = ill.scenarios.map((r) => `${move(r.st_move_pct)} → ${ret(r.return_on_notional_pct)}`);
-  const scenRows: string[] = [];
-  for (let i = 0; i < cells.length; i += 3) {
-    scenRows.push("  " + cells.slice(i, i + 3).join("    "));
-  }
 
   return [
     L.title,
@@ -92,9 +80,6 @@ export function buildPitchText(ill: Illustration, lang: Lang): string {
     `  ${L.ifAbove} (${money(s.strike, cur, 2)}) ${L.then} (+${pct(s.coupon_abs_pct)})`,
     `  ${L.breakeven}: ${money(s.breakeven_st, cur, 2)} (${pct(s.breakeven_pct_of_spot)} ${L.ofSpot})`,
     `  ${L.maxLoss}: ${pct(s.max_loss_pct)}`,
-    "",
-    `${L.scenarios}:`,
-    ...scenRows,
     "",
     L.disclaimer,
   ].join("\n");

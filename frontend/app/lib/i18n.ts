@@ -14,6 +14,7 @@ const en: Dict = {
   tab_single: "Structure",
   tab_compare: "Compare",
   tab_termsheet: "Term Sheet",
+  tab_onepager: "One-pager",
   footer:
     "Figures are illustrative, derived from the inputs shown · not an offer or solicitation · ELNs involve risk of loss up to the max loss shown.",
 
@@ -143,6 +144,10 @@ const en: Dict = {
   ts_copy: "Copy summary",
   ts_copied: "Copied ✓",
   ts_copy_failed: "Copy failed — select & copy manually",
+
+  // one-pager
+  op_title: "ELN One-Pager",
+  op_print: "Print / Save PDF",
   ts_disclaimer:
     "For illustrative purposes only. Not an offer, solicitation, or investment advice. Figures depend on the inputs shown. ELNs can result in loss of principal up to the max loss shown.",
 
@@ -175,6 +180,7 @@ const zh: Dict = {
   tab_single: "結構",
   tab_compare: "比較",
   tab_termsheet: "條款表",
+  tab_onepager: "一頁式",
   footer: "數字僅供演示，按所示輸入計算 · 非要約或招攬 · ELN 可能虧損至上限所示金額。",
 
   inputs_title: "結構參數",
@@ -295,6 +301,10 @@ const zh: Dict = {
   ts_copy: "複製摘要",
   ts_copied: "已複製 ✓",
   ts_copy_failed: "複製失敗——請手動選取複製",
+
+  // 一頁式
+  op_title: "ELN 一頁式摘要",
+  op_print: "列印 / 存 PDF",
   ts_disclaimer: "僅供演示，非要約、招攬或投資建議。數字取決於所示輸入。ELN 可能虧損本金至上限所示金額。",
 
   // coupon 輸入 + 自動贖回（call）

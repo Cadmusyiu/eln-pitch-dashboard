@@ -18,16 +18,19 @@ body {
   border-radius: 4px;
 }
 
-/* Print: only the term sheet shows when printing */
+/* Print: only the term sheet / one-pager shows when printing */
 @media print {
   body * {
     visibility: hidden;
   }
   .termsheet,
-  .termsheet * {
+  .termsheet *,
+  .onepager,
+  .onepager * {
     visibility: visible;
   }
-  .termsheet {
+  .termsheet,
+  .onepager {
     position: absolute;
     left: 0;
     top: 0;
