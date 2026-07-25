@@ -37,16 +37,13 @@ export default function TermSheet({ ill }: { ill: Illustration }) {
           <Row label={t("ts_spot")} value={money(s.spot, cur, 2)} />
           <Row label={t("ts_strike")} value={`${money(s.strike, cur, 2)} (${pct(s.strike_pct * 100, 0)})`} />
           <Row label={t("ts_tenor")} value={`${s.tenor_months}M`} />
-          <Row label={t("ts_iv")} value={pct(s.iv * 100, 1)} />
-          <Row label={t("ts_rate")} value={pct(s.risk_free_rate * 100, 2)} />
-          <Row label={t("ts_div")} value={pct(s.dividend_yield * 100, 2)} />
+          <Row label={t("ts_call_level")} value={`${pct(s.call_level_pct, 0)} (${money(s.call_level_st, cur, 2)})`} />
         </div>
         <div>
           <Row label={t("ts_notional")} value={money(s.notional, cur, 0)} />
           <Row label={t("ts_shares")} value={s.shares.toLocaleString("en-US", { maximumFractionDigits: 0 })} />
           <Row label={t("ts_premium")} value={money(s.total_premium, cur, 2)} />
-          <Row label={t("ts_coupon_pa")} value={pct(s.coupon_annualized_simple_pct)} />
-          <Row label={t("ts_coupon_comp")} value={pct(s.coupon_annualized_compounded_pct)} />
+          <Row label={t("ts_coupon_pa")} value={pct(s.coupon_pa_pct)} />
           <Row label={t("ts_coupon_abs")} value={pct(s.coupon_abs_pct)} />
           <Row label={t("ts_settlement")} value={s.settlement === "cash" ? t("settlement_cash") : t("settlement_physical")} />
         </div>
@@ -55,10 +52,13 @@ export default function TermSheet({ ill }: { ill: Illustration }) {
       <div className="mt-3 grid grid-cols-1 gap-x-8 sm:grid-cols-2">
         <Row label={t("ts_breakeven")} value={`${money(s.breakeven_st, cur, 2)} (${pct(s.breakeven_pct_of_spot)})`} />
         <Row label={t("ts_max_loss")} value={pct(s.max_loss_pct)} />
-        <Row label={t("ts_prob_itm")} value={pct(s.prob_itm_pct)} />
       </div>
 
-      <p className="mt-4 rounded-md bg-slate-50 p-3 text-xs text-slate-600">
+      <p className="mt-4 rounded-md bg-sky-50 p-3 text-xs text-slate-700">
+        {t("ts_call_feature", { level: pct(s.call_level_pct, 0), price: money(s.call_level_st, cur, 2) })}
+      </p>
+
+      <p className="mt-3 rounded-md bg-slate-50 p-3 text-xs text-slate-600">
         {s.settlement === "cash" ? t("ts_note_cash") : t("ts_note_physical")}
       </p>
 

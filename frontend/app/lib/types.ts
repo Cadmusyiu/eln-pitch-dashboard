@@ -1,19 +1,21 @@
-// Pricing input + output types. Field names MIRROR backend/pricing.py dataclasses
-// exactly — the FE/Python sync is by convention (see lib/engine.ts).
+// Pricing input + output types. The dashboard is now COUPON-DRIVEN: the salesperson
+// enters the quoted coupon (p.a.) directly, and the structure (breakeven, max loss,
+// payoff, scenarios) is derived from that coupon + strike + tenor — no Black-Scholes
+// model in the sales flow. The backend retains the canonical BS engine (pricing.py)
+// for the theoretical path; this FE type set is the illustration contract.
 
 export type Currency = "USD" | "HKD";
 export type Settlement = "cash" | "physical";
 
 export interface PricingInput {
   ticker: string;
+  currency: Currency;
   spot: number;
   strike_pct: number; // 0.95 -> strike = 0.95 × spot
   tenor_months: number; // {1,3,6,12}
-  iv: number; // σ, fraction
-  risk_free_rate: number; // r, fraction (continuous)
-  dividend_yield: number; // q, fraction (continuous)
+  coupon_pa_pct: number; // DIRECT quoted annualized coupon, % (e.g. 9.71 = 9.71% p.a.)
+  call_level_pct: number; // autocall level, % of spot (e.g. 100 / 90 / 80 / 70)
   notional: number;
-  currency: Currency;
   settlement: Settlement;
 }
 
@@ -42,32 +44,20 @@ export interface Summary {
   tenor_months: number;
   T: number;
 
-  iv: number; // fraction
-  risk_free_rate: number; // fraction
-  dividend_yield: number; // fraction
+  // Coupon (echo of the direct input) + autocall level
+  coupon_pa_pct: number; // annualized, %
+  coupon_abs_pct: number; // over the tenor = coupon_pa × T, %
+  call_level_pct: number; // % of spot
+  call_level_st: number; // call_level_pct/100 × spot
 
   notional: number;
   shares: number;
 
-  put_price_per_share: number;
-  total_premium: number;
+  total_premium: number; // = coupon_abs_frac × notional (total coupon amount, currency)
 
-  coupon_abs_pct: number;
-  coupon_annualized_simple_pct: number;
-  coupon_annualized_compounded_pct: number;
-
-  prob_itm_pct: number;
-  breakeven_st: number;
+  breakeven_st: number; // K − P
   breakeven_pct_of_spot: number;
-  max_loss_pct: number;
-
-  delta: number;
-  gamma: number;
-  vega_per_1pct: number;
-  theta_per_day: number;
-
-  d1: number;
-  d2: number;
+  max_loss_pct: number; // (K − P)/S0 × 100
 
   warnings: string[];
 }
@@ -83,7 +73,7 @@ export interface MarketData {
   currency: Currency;
   spot: number | null;
   dividend_yield: number | null;
-  iv_default: number | null; // null for HK (no option chain)
+  iv_default: number | null;
   iv_source: "option_chain" | "manual" | "unavailable";
   as_of: string;
 }

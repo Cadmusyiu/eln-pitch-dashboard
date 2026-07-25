@@ -111,8 +111,6 @@ export default function InputForm({ value, onChange }: Props) {
       } else {
         const patch: Partial<PricingInput> = {};
         if (md.spot) patch.spot = md.spot;
-        if (md.dividend_yield != null) patch.dividend_yield = md.dividend_yield;
-        if (md.iv_default != null) patch.iv = md.iv_default;
         patch.currency = md.currency;
         if (Object.keys(patch).length) onChange(patch);
         setStatus(md.spot ? "ok" : "failed");
@@ -139,13 +137,11 @@ export default function InputForm({ value, onChange }: Props) {
               const tk = e.target.value.toUpperCase();
               const p = findPreset(tk);
               if (p) {
-                // Matched a curated underlying — fill indicative spot/dividend/IV/currency.
+                // Matched a curated underlying — fill indicative spot + currency.
                 onChange({
                   ticker: tk,
                   currency: p.currency,
                   spot: p.spot,
-                  dividend_yield: p.dividend_yield,
-                  iv: p.iv,
                 });
               } else {
                 // Unknown ticker — keep fields as-is, just infer currency.
@@ -189,6 +185,23 @@ export default function InputForm({ value, onChange }: Props) {
         <NumberField value={value.spot} onValue={(n) => onChange({ spot: n })} />
       </Field>
 
+      <Field label={t("currency")}>
+        <div className="mt-1 flex rounded-md bg-navy-800 p-1">
+          {(["USD", "HKD"] as Currency[]).map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => onChange({ currency: c })}
+              className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition ${
+                value.currency === c ? "bg-white text-navy-900" : "text-slate-300 hover:text-white"
+              }`}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+      </Field>
+
       <Field label={t("strike_pct")} hint={t("strike_hint")}>
         <NumberField
           value={+(value.strike_pct * 100).toFixed(2)}
@@ -211,17 +224,15 @@ export default function InputForm({ value, onChange }: Props) {
         </select>
       </Field>
 
-      {/* Implied vol (σ) and risk-free rate (r) are intentionally not editable inputs:
-          σ is sourced per-underlying from the preset basket (edit presets.ts to override),
-          r is a constant (default 0.045). Both stay visible in the Summary structure row
-          and the engine still prices with them — they're just not sales-facing levers. */}
+      {/* No Black-Scholes model in the sales flow — the coupon (p.a.) is a direct desk
+          quote. The structure (breakeven, max loss, payoff) is derived from it. */}
 
-      <Field label={t("div_yield")}>
-        <NumberField
-          value={+(value.dividend_yield * 100).toFixed(2)}
-          onValue={(n) => onChange({ dividend_yield: n / 100 })}
-          suffix="%"
-        />
+      <Field label={t("coupon_pa")} hint={t("coupon_hint")}>
+        <NumberField value={value.coupon_pa_pct} onValue={(n) => onChange({ coupon_pa_pct: n })} suffix="%" />
+      </Field>
+
+      <Field label={t("call_level")} hint={t("call_level_hint")}>
+        <NumberField value={value.call_level_pct} onValue={(n) => onChange({ call_level_pct: n })} suffix="%" />
       </Field>
 
       <Field label={t("notional")}>

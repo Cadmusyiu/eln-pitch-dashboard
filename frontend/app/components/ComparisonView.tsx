@@ -26,14 +26,13 @@ export default function ComparisonView({ base }: { base: PricingInput }) {
   const { t } = useLang();
   const cols = variants(base);
   const cur = base.currency;
-  const bestCoupon = Math.max(...cols.map((c) => c.s.coupon_annualized_simple_pct));
+  const bestCoupon = Math.max(...cols.map((c) => c.s.coupon_pa_pct));
 
   const rows: { label: string; render: (s: Summary) => string; cls?: string }[] = [
-    { label: t("row_coupon_pa"), render: (s) => pct(s.coupon_annualized_simple_pct), cls: "font-semibold" },
+    { label: t("row_coupon_pa"), render: (s) => pct(s.coupon_pa_pct), cls: "font-semibold" },
     { label: t("row_coupon_abs"), render: (s) => pct(s.coupon_abs_pct) },
     { label: t("row_breakeven"), render: (s) => money(s.breakeven_st, cur, 2) },
     { label: t("row_max_loss"), render: (s) => pct(s.max_loss_pct) },
-    { label: t("row_prob_itm"), render: (s) => pct(s.prob_itm_pct) },
   ];
 
   return (
@@ -58,7 +57,7 @@ export default function ComparisonView({ base }: { base: PricingInput }) {
                 {cols.map((c, i) => {
                   const isBestCoupon =
                     r.label === t("row_coupon_pa") &&
-                    c.s.coupon_annualized_simple_pct === bestCoupon;
+                    c.s.coupon_pa_pct === bestCoupon;
                   return (
                     <td
                       key={i}

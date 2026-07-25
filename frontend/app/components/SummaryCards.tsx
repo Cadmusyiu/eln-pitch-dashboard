@@ -52,10 +52,10 @@ export default function SummaryCards({ s }: { s: Summary }) {
       )}
 
       {/* Headline row — the client-facing numbers */}
-      <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="mb-3 grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Card
           label={t("coupon_pa")}
-          value={pct(s.coupon_annualized_simple_pct)}
+          value={pct(s.coupon_pa_pct)}
           valueClass="text-positive"
           sub={t("coupon_pa_sub", { abs: pct(s.coupon_abs_pct) })}
           highlight
@@ -78,12 +78,6 @@ export default function SummaryCards({ s }: { s: Summary }) {
           valueClass="text-negative"
           sub={t("max_loss_sub")}
         />
-        <Card
-          label={t("prob_itm")}
-          value={pct(s.prob_itm_pct)}
-          valueClass={s.prob_itm_pct > 40 ? "text-negative" : "text-slate-900"}
-          sub={t("prob_itm_sub")}
-        />
       </div>
 
       {/* Structure row — the deal terms */}
@@ -91,7 +85,7 @@ export default function SummaryCards({ s }: { s: Summary }) {
         <Card label={t("s_spot")} value={money(s.spot, cur, 2)} />
         <Card label={t("s_strike")} value={money(s.strike, cur, 2)} sub={`${pct(s.strike_pct * 100, 0)} of spot`} />
         <Card label={t("s_tenor")} value={tenorLabel} />
-        <Card label={t("s_iv")} value={pct(s.iv * 100, 1)} />
+        <Card label={t("s_call_level")} value={pct(s.call_level_pct, 0)} sub={money(s.call_level_st, cur, 2)} />
         <Card label={t("s_shares")} value={s.shares.toLocaleString("en-US", { maximumFractionDigits: 0 })} />
         <Card label={t("s_premium")} value={money(s.total_premium, cur, 0)} />
       </div>

@@ -123,7 +123,26 @@ const en: Dict = {
   ts_note_physical: "If S_T ≥ K at expiry: return of principal + coupon. If S_T < K: physical delivery — receive shares at strike K.",
   ts_print: "Print",
   ts_disclaimer:
-    "For illustrative purposes only. Not an offer, solicitation, or investment advice. Figures depend on the inputs shown and on model assumptions (Black-Scholes, continuous compounding). ELNs can result in loss of principal up to the max loss shown.",
+    "For illustrative purposes only. Not an offer, solicitation, or investment advice. Figures depend on the inputs shown. ELNs can result in loss of principal up to the max loss shown.",
+
+  // coupon-driven inputs + autocall (call feature)
+  currency: "Currency",
+  coupon_hint: "Annualized coupon paid at maturity if not called and S_T ≥ strike.",
+  call_level: "Call Level",
+  call_level_hint: "% of spot — observed monthly after the first non-callable month; called if S ≥ level.",
+  s_call_level: "Call Level",
+  ts_call_level: "Call Level",
+  ts_call_feature:
+    "Autocall: observed monthly from month 2 (first month non-callable). If S ≥ {level} ({price}) at an observation, the note is called — investor receives principal + accrued coupon, and the note terminates.",
+  call_card_title: "Autocall (Call Feature)",
+  call_card_level: "Call level",
+  call_card_obs: "Observation",
+  call_card_obs_v: "Monthly",
+  call_card_ncp: "Non-callable",
+  call_card_ncp_v: "First month",
+  call_card_redemption: "If called: principal + accrued coupon ({coupon} p.a. × months elapsed / 12).",
+  warn_call_below_strike:
+    "Call level is below strike — unusual; the note could be called while the put is still OTM.",
 
   lang_en: "EN",
   lang_zh: "中文",
@@ -234,7 +253,24 @@ const zh: Dict = {
   ts_note_cash: "到期若 S_T ≥ K：返還本金 + 票息。若 S_T < K：現金結算，虧損 = (K − S_T)/S₀。",
   ts_note_physical: "到期若 S_T ≥ K：返還本金 + 票息。若 S_T < K：實物交收——按行使價 K 收取股票。",
   ts_print: "列印",
-  ts_disclaimer: "僅供演示，非要約、招攬或投資建議。數字取決於所示輸入及模型假設（Black-Scholes、連續複利）。ELN 可能虧損本金至上限所示金額。",
+  ts_disclaimer: "僅供演示，非要約、招攬或投資建議。數字取決於所示輸入。ELN 可能虧損本金至上限所示金額。",
+
+  // coupon 輸入 + 自動贖回（call）
+  currency: "貨幣",
+  coupon_hint: "未被贖回且到期 S_T ≥ 行使價時支付的年化票息。",
+  call_level: "贖回水平",
+  call_level_hint: "佔現價 %——首月不可贖回，之後每月觀察，S ≥ 水平即贖回。",
+  s_call_level: "贖回水平",
+  ts_call_level: "贖回水平",
+  ts_call_feature: "自動贖回：自第 2 個月起每月觀察（首月不可贖回）。若觀察日 S ≥ {level}（{price}），票據即被贖回——投資人取回本金 + 應計票息，票據終止。",
+  call_card_title: "自動贖回（Call 條款）",
+  call_card_level: "贖回水平",
+  call_card_obs: "觀察頻率",
+  call_card_obs_v: "每月",
+  call_card_ncp: "不可贖回期",
+  call_card_ncp_v: "首個月",
+  call_card_redemption: "若被贖回：本金 + 應計票息（{coupon} 年化 × 經過月數 / 12）。",
+  warn_call_below_strike: "贖回水平低於行使價——不常見；票據可能在 put 仍價外時被贖回。",
 
   lang_en: "EN",
   lang_zh: "中文",

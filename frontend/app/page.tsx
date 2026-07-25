@@ -5,24 +5,23 @@ import InputForm from "./components/InputForm";
 import SummaryCards from "./components/SummaryCards";
 import PayoffChart from "./components/PayoffChart";
 import ScenarioTable from "./components/ScenarioTable";
-import GreeksCard from "./components/GreeksCard";
+import CallFeatureCard from "./components/CallFeatureCard";
 import ComparisonView from "./components/ComparisonView";
 import TermSheet from "./components/TermSheet";
 import { buildIllustration } from "./lib/engine";
 import { PricingInput } from "./lib/types";
 import { LangProvider, useLang, Lang } from "./lib/i18n";
 
-// Canonical example (independently verified): AAPL short-put, 95% strike, 3M.
+// Canonical example: AAPL short-put, 95% strike, 3M, 9.71% p.a. coupon, 100% call.
 const DEFAULT_INPUT: PricingInput = {
   ticker: "AAPL",
+  currency: "USD",
   spot: 190,
   strike_pct: 0.95,
   tenor_months: 3,
-  iv: 0.25,
-  risk_free_rate: 0.045,
-  dividend_yield: 0.005,
+  coupon_pa_pct: 9.71,
+  call_level_pct: 100,
   notional: 100_000,
-  currency: "USD",
   settlement: "cash",
 };
 
@@ -107,7 +106,7 @@ function Dashboard() {
                 <PayoffChart payoff={illustration.payoff} s={illustration.summary} />
                 <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1fr_360px]">
                   <ScenarioTable rows={illustration.scenarios} currency={illustration.summary.currency} />
-                  <GreeksCard s={illustration.summary} />
+                  <CallFeatureCard s={illustration.summary} />
                 </div>
               </>
             )}
