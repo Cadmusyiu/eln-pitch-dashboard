@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { Illustration } from "../lib/types";
 import { money, pct } from "../lib/format";
 import { useLang } from "../lib/i18n";
+import { buildPitchText } from "../lib/pitch";
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
@@ -14,21 +16,49 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 export default function TermSheet({ ill }: { ill: Illustration }) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const s = ill.summary;
   const cur = s.currency;
+  const [copied, setCopied] = useState<"idle" | "ok" | "failed">("idle");
+
+  // Copy a clean, paste-ready ELN summary (in the active language) for the sales
+  // team to drop into a client message. HTTPS on github.io → clipboard API works.
+  const onCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(buildPitchText(ill, lang));
+      setCopied("ok");
+    } catch {
+      setCopied("failed");
+    }
+    setTimeout(() => setCopied("idle"), 2500);
+  };
 
   return (
     <div className="termsheet mx-auto max-w-2xl rounded-xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-bold text-navy-900">{t("ts_title")}</h2>
-        <button
-          type="button"
-          onClick={() => window.print()}
-          className="rounded-md bg-navy-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-navy-800"
-        >
-          {t("ts_print")}
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onCopy}
+            className={`rounded-md px-3 py-1.5 text-xs font-medium text-white ${
+              copied === "ok"
+                ? "bg-positive"
+                : copied === "failed"
+                ? "bg-negative"
+                : "bg-sky-600 hover:bg-sky-500"
+            }`}
+          >
+            {copied === "ok" ? t("ts_copied") : copied === "failed" ? t("ts_copy_failed") : t("ts_copy")}
+          </button>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="rounded-md bg-navy-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-navy-800"
+          >
+            {t("ts_print")}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-x-8 sm:grid-cols-2">

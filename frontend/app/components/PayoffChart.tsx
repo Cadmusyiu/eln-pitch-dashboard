@@ -42,7 +42,7 @@ export default function PayoffChart({ payoff, s }: { payoff: PayoffPoint[]; s: S
             domain={[0, 130]}
           />
           <YAxis tickFormatter={(v) => `${v}%`} tick={{ fontSize: 11 }} width={48} />
-          <Tooltip formatter={(v: number) => `${v.toFixed(2)}%`} labelFormatter={(l) => `S_T = ${l}% of spot`} />
+          <Tooltip formatter={(v: number) => `${v.toFixed(2)}%`} labelFormatter={(l) => `${t("ref_st")} = ${l}% of spot`} />
           <ReferenceLine y={0} stroke="#94a3b8" />
           <ReferenceLine x={+s.call_level_pct.toFixed(1)} stroke="#7c3aed" strokeDasharray="4 3" label={{ value: t("ref_call"), fontSize: 10, fill: "#6d28d9", position: "insideTopRight" }} />
           <ReferenceLine x={100} stroke="#1b3a68" strokeDasharray="4 3" label={{ value: t("ref_spot"), fontSize: 10, fill: "#1b3a68" }} />
