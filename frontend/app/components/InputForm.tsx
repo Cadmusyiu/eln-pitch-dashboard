@@ -21,29 +21,33 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
   );
 }
 
-const inputCls =
-  "mt-1 w-full rounded-md border border-slate-600 bg-navy-800 px-3 py-2 text-sm text-white " +
+const baseInputCls =
+  "w-full rounded-md border border-slate-600 bg-navy-800 px-3 py-2 text-sm text-white " +
   "focus:border-sky-400 focus:outline-none focus:ring-1 focus:ring-sky-400";
+const inputCls = "mt-1 " + baseInputCls;
 
 // Text-backed numeric input — see premium-financing InputForm for the rationale
 // (a type=number bound to a number snaps "0" back when you clear the last digit).
+// Optional `suffix` (e.g. "%") renders an absolutely-positioned unit label inside the field.
 function NumberField({
   value,
   onValue,
   placeholder,
+  suffix,
 }: {
   value: number;
   onValue: (n: number) => void;
   placeholder?: string;
+  suffix?: string;
 }) {
   const [text, setText] = useState(String(value));
   const [focused, setFocused] = useState(false);
   const displayed = focused ? text : String(value);
-  return (
+  const inputEl = (
     <input
       type="text"
       inputMode="decimal"
-      className={inputCls}
+      className={suffix ? baseInputCls + " pr-8" : inputCls}
       value={displayed}
       placeholder={placeholder}
       onFocus={(e) => {
@@ -63,9 +67,17 @@ function NumberField({
       }}
     />
   );
+  if (!suffix) return inputEl;
+  return (
+    <div className="relative mt-1">
+      {inputEl}
+      <span className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-slate-400">
+        {suffix}
+      </span>
+    </div>
+  );
 }
 
-const STRIKE_OPTIONS = [0.85, 0.9, 0.95, 1.0, 1.05];
 const TENOR_OPTIONS = [1, 3, 6, 12];
 
 function looksHK(ticker: string): boolean {
@@ -81,10 +93,12 @@ export default function InputForm({ value, onChange }: Props) {
   const { t } = useLang();
   const [fetching, setFetching] = useState(false);
   const [status, setStatus] = useState<"idle" | "ok" | "failed">("idle");
-  const [ivSource, setIvSource] = useState<"option_chain" | "manual" | "unavailable">("manual");
 
   // Derived each render — the ticker is the single source of truth, so no state needed.
+  // `presetApplied` is true only when the fields actually hold the preset's values, so the
+  // indicative badge never falsely claims a preset is loaded (e.g. on the canonical default).
   const presetMatch = findPreset(value.ticker);
+  const presetApplied = !!presetMatch && Math.abs(value.spot - presetMatch.spot) < 1e-9;
 
   const onFetch = async () => {
     if (!LIVE_DATA_ENABLED || !value.ticker.trim()) return;
@@ -101,7 +115,6 @@ export default function InputForm({ value, onChange }: Props) {
         if (md.iv_default != null) patch.iv = md.iv_default;
         patch.currency = md.currency;
         if (Object.keys(patch).length) onChange(patch);
-        setIvSource(md.iv_source);
         setStatus(md.spot ? "ok" : "failed");
       }
     } catch {
@@ -110,8 +123,6 @@ export default function InputForm({ value, onChange }: Props) {
       setFetching(false);
     }
   };
-
-  const ivSourceKey = `iv_source_${ivSource}`;
 
   return (
     <div className="rounded-xl bg-navy-900 p-5 shadow-lg">
@@ -161,9 +172,9 @@ export default function InputForm({ value, onChange }: Props) {
             </option>
           ))}
         </datalist>
-        {presetMatch ? (
+        {presetApplied ? (
           <span className="mt-1 block text-xs text-sky-300">
-            {presetMatch.name} · {t("indicative")}
+            {presetMatch?.name} · {t("indicative")}
           </span>
         ) : (
           !LIVE_DATA_ENABLED && (
@@ -178,18 +189,12 @@ export default function InputForm({ value, onChange }: Props) {
         <NumberField value={value.spot} onValue={(n) => onChange({ spot: n })} />
       </Field>
 
-      <Field label={t("strike_pct")}>
-        <select
-          className={inputCls}
-          value={value.strike_pct}
-          onChange={(e) => onChange({ strike_pct: Number(e.target.value) })}
-        >
-          {STRIKE_OPTIONS.map((s) => (
-            <option key={s} value={s}>
-              {(s * 100).toFixed(0)}%
-            </option>
-          ))}
-        </select>
+      <Field label={t("strike_pct")} hint={t("strike_hint")}>
+        <NumberField
+          value={+(value.strike_pct * 100).toFixed(2)}
+          onValue={(n) => onChange({ strike_pct: n / 100 })}
+          suffix="%"
+        />
       </Field>
 
       <Field label={t("tenor")}>
@@ -206,21 +211,17 @@ export default function InputForm({ value, onChange }: Props) {
         </select>
       </Field>
 
-      <Field label={t("iv")} hint={t("iv_hint")}>
-        <div className="mt-1 flex items-center gap-2">
-          <NumberField value={+(value.iv * 100).toFixed(2)} onValue={(n) => onChange({ iv: n / 100 })} />
-          <span className="shrink-0 rounded bg-navy-700 px-2 py-1 text-[11px] text-slate-300">
-            {t(ivSourceKey)}
-          </span>
-        </div>
-      </Field>
-
-      <Field label={t("risk_free")}>
-        <NumberField value={+(value.risk_free_rate * 100).toFixed(2)} onValue={(n) => onChange({ risk_free_rate: n / 100 })} />
-      </Field>
+      {/* Implied vol (σ) and risk-free rate (r) are intentionally not editable inputs:
+          σ is sourced per-underlying from the preset basket (edit presets.ts to override),
+          r is a constant (default 0.045). Both stay visible in the Summary structure row
+          and the engine still prices with them — they're just not sales-facing levers. */}
 
       <Field label={t("div_yield")}>
-        <NumberField value={+(value.dividend_yield * 100).toFixed(2)} onValue={(n) => onChange({ dividend_yield: n / 100 })} />
+        <NumberField
+          value={+(value.dividend_yield * 100).toFixed(2)}
+          onValue={(n) => onChange({ dividend_yield: n / 100 })}
+          suffix="%"
+        />
       </Field>
 
       <Field label={t("notional")}>
