@@ -17,6 +17,7 @@ const en: Dict = {
   tab_onepager: "One-pager",
   footer:
     "Figures are illustrative, derived from the inputs shown · not an offer or solicitation · ELNs involve risk of loss up to the max loss shown.",
+  footer_powered: "Powered by",
 
   // inputs
   inputs_title: "Structure Inputs",
@@ -185,6 +186,7 @@ const zh: Dict = {
   tab_termsheet: "條款表",
   tab_onepager: "一頁式",
   footer: "數字僅供演示，按所示輸入計算 · 非要約或招攬 · ELN 可能虧損至上限所示金額。",
+  footer_powered: "技術提供",
 
   inputs_title: "結構參數",
   ticker: "標的代號",

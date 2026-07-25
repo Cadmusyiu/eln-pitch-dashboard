@@ -124,7 +124,13 @@ function Dashboard() {
         </div>
       </main>
 
-      <footer className="px-4 py-4 text-center text-xs text-slate-400 sm:px-6">{t("footer")}</footer>
+      <footer className="px-4 py-4 text-center sm:px-6">
+        <p className="text-xs text-slate-400">{t("footer")}</p>
+        <div className="mt-2 text-xs">
+          <span className="text-slate-400">{t("footer_powered")} </span>
+          <span className="font-bold tracking-[0.2em] text-navy-700">CADAI</span>
+        </div>
+      </footer>
     </div>
   );
 }
